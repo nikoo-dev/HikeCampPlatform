@@ -1,0 +1,6 @@
+@HikeCampPlatform.Api_HostAddress = http://localhost:5261
+
+GET {{HikeCampPlatform.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

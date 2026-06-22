@@ -1,0 +1,15 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: hikecamp-postgres
+    environment:
+      POSTGRES_USER: hikecamp
+      POSTGRES_PASSWORD: devpassword
+      POSTGRES_DB: hikecampdb
+    ports:
+      - "5433:5432"
+    volumes:
+      - hikecamp-pgdata:/var/lib/postgresql/data
+
+volumes:
+  hikecamp-pgdata:
