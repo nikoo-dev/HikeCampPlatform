@@ -13,10 +13,12 @@ namespace HikeCampPlatform.Api.Controllers;
 public class TourController : ControllerBase
 {
     private readonly AppDbContext _db;
+    private readonly IConfiguration _config;
 
-    public TourController(AppDbContext db)
+    public TourController(AppDbContext db, IConfiguration config)
     {
         _db = db;
+        _config = config;
     }
 
     // POST /api/tours -- operator only
@@ -101,6 +103,29 @@ public class TourController : ControllerBase
         }
 
         return Ok(MapToResponse(tour, tour.Operator?.CompanyName ?? ""));
+    }
+
+    // PATCH /api/tours/{id}/publish -- admin only (temporary hardcoded key check)
+    [HttpPatch("{id}/publish")]
+    public async Task<ActionResult> PublishTour(int id, [FromHeader(Name = "X-Admin-Key")] string? adminKey)
+    {
+        var expectedKey = _config["AdminSettings:AdminKey"];
+
+        if (string.IsNullOrEmpty(adminKey) || adminKey != expectedKey)
+        {
+            return Unauthorized(new { message = "Invalid admin key." });
+        }
+
+        var tour = await _db.Tours.FindAsync(id);
+        if (tour == null)
+        {
+            return NotFound();
+        }
+
+        tour.IsPublished = true;
+        await _db.SaveChangesAsync();
+
+        return Ok(new { message = "Tour published.", tourId = tour.Id, isPublished = tour.IsPublished });
     }
 
     private static TourResponse MapToResponse(Tour tour, string operatorCompanyName)

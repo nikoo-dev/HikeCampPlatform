@@ -17,6 +17,7 @@
     </PackageReference>
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.2" />
     <PackageReference Include="Scalar.AspNetCore" Version="2.16.4" />
+    <PackageReference Include="Stripe.net" Version="52.0.0" />
   </ItemGroup>
 
 </Project>

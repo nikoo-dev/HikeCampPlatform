@@ -51,6 +51,8 @@ public class Tour
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
+    public List<TourDeparture> Departures { get; set; } = new();
+
     // Navigation property: one tour has many route points
     public List<TourRoutePoint> RoutePoints { get; set; } = new();  
 }

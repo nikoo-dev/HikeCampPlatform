@@ -13,6 +13,8 @@ public class AppDbContext : DbContext
     public DbSet<Operator> Operators => Set<Operator>();
     public DbSet<Tour> Tours => Set<Tour>();
     public DbSet<TourRoutePoint> TourRoutePoints => Set<TourRoutePoint>();
+    public DbSet<TourDeparture> TourDepartures => Set<TourDeparture>();
+    public DbSet<Booking> Bookings => Set<Booking>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -35,5 +37,23 @@ public class AppDbContext : DbContext
             .WithMany(t => t.RoutePoints)
             .HasForeignKey(rp => rp.TourId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<TourDeparture>()
+            .HasOne(td => td.Tour)
+            .WithMany(t => t.Departures)
+            .HasForeignKey(td => td.TourId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<Booking>()
+            .HasOne(b => b.User)
+            .WithMany()
+            .HasForeignKey(b => b.UserId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<Booking>()
+            .HasOne(b => b.TourDeparture)
+            .WithMany(td => td.Bookings)
+            .HasForeignKey(b => b.TourDepartureId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }
