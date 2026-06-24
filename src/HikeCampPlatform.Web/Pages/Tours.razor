@@ -1,0 +1,76 @@
+@page "/tours"
+@using System.Net.Http.Json
+@inject HttpClient Http
+
+<h3>Browse Tours</h3>
+
+@if (isLoading)
+{
+    <p>Loading tours...</p>
+}
+else if (tours == null || tours.Count == 0)
+{
+    <p>No published tours yet.</p>
+}
+else
+{
+    <div class="row">
+        @foreach (var tour in tours)
+        {
+            <div class="col-md-4 mb-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title"><a href="/tours/@tour.Id">@tour.Title</a></h5>
+                        <h6 class="card-subtitle mb-2 text-muted">@tour.Country @(string.IsNullOrEmpty(tour.Region) ? "" : $"- {tour.Region}")</h6>
+                        <p class="card-text">@tour.Description</p>
+                        <p>
+                            <strong>Price:</strong> @tour.PricePerPerson.ToString("0.00") @tour.Currency / person<br />
+                            <strong>Duration:</strong> @tour.DurationDays days<br />
+                            <strong>Difficulty:</strong> @tour.DifficultyLevel<br />
+                            <strong>Operator:</strong> @tour.OperatorCompanyName
+                        </p>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private List<TourResponse>? tours;
+    private bool isLoading = true;
+
+    public class TourResponse
+    {
+        public int Id { get; set; }
+        public int OperatorId { get; set; }
+        public string OperatorCompanyName { get; set; } = string.Empty;
+        public string Title { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public int Type { get; set; }
+        public string Country { get; set; } = string.Empty;
+        public string? Region { get; set; }
+        public int DifficultyLevel { get; set; }
+        public int DurationDays { get; set; }
+        public decimal PricePerPerson { get; set; }
+        public string Currency { get; set; } = string.Empty;
+        public int MaxParticipants { get; set; }
+        public bool IsPublished { get; set; }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            tours = await Http.GetFromJsonAsync<List<TourResponse>>("/api/tours");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading tours: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+}

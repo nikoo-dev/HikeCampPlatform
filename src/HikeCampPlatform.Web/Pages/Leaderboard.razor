@@ -1,0 +1,65 @@
+@page "/leaderboard"
+@using System.Net.Http.Json
+@inject HttpClient Http
+
+<h3>Leaderboard</h3>
+
+@if (isLoading)
+{
+    <p>Loading leaderboard...</p>
+}
+else if (entries == null || entries.Count == 0)
+{
+    <p>No completed tours yet. Be the first!</p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Rank</th>
+                <th>Name</th>
+                <th>Completed Tours</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var entry in entries)
+            {
+                <tr>
+                    <td>@entry.Rank</td>
+                    <td>@entry.FullName</td>
+                    <td>@entry.CompletedTourCount</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<LeaderboardEntry>? entries;
+    private bool isLoading = true;
+
+    public class LeaderboardEntry
+    {
+        public int UserId { get; set; }
+        public string FullName { get; set; } = string.Empty;
+        public int CompletedTourCount { get; set; }
+        public int Rank { get; set; }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            entries = await Http.GetFromJsonAsync<List<LeaderboardEntry>>("/api/leaderboard");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading leaderboard: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+}

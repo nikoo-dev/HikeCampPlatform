@@ -1,5 +1,6 @@
 <Solution>
   <Folder Name="/src/">
     <Project Path="src/HikeCampPlatform.Api/HikeCampPlatform.Api.csproj" />
+    <Project Path="src/HikeCampPlatform.Web/HikeCampPlatform.Web.csproj" />
   </Folder>
 </Solution>

@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HikeCampPlatform.Web</title>
+    <base href="/" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Fjalla+One&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <link rel="preload" id="webassembly" />
+    <link rel="stylesheet" href="lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="css/app.css" />
+    <link rel="icon" type="image/png" href="favicon.png" />
+    <link href="HikeCampPlatform.Web.styles.css" rel="stylesheet" />
+    <script type="importmap"></script>
+</head>
+
+<body>
+    <div id="app">
+        <svg class="loading-progress">
+            <circle r="40%" cx="50%" cy="50%" />
+            <circle r="40%" cx="50%" cy="50%" />
+        </svg>
+        <div class="loading-progress-text"></div>
+    </div>
+
+    <div id="blazor-error-ui">
+        An unhandled error has occurred.
+        <a href="." class="reload">Reload</a>
+        <span class="dismiss">🗙</span>
+    </div>
+    <script src="_framework/blazor.webassembly#[.{fingerprint}].js"></script>
+    <script>
+    window.trailMap = {
+        render: function (elementId, points) {
+            if (!points || points.length === 0) return;
+
+            var map = L.map(elementId, { zoomControl: true }).setView([points[0].lat, points[0].lng], 11);
+
+            L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+                attribution: 'Map data: OpenStreetMap contributors, SRTM | Map style: OpenTopoMap',
+                maxZoom: 16
+            }).addTo(map);
+
+            var latlngs = points.map(p => [p.lat, p.lng]);
+
+            L.polyline(latlngs, {
+                color: '#D4A24C',
+                weight: 3,
+                dashArray: '2, 10',
+                lineCap: 'round'
+            }).addTo(map);
+
+            points.forEach(function (p) {
+                var marker = L.circleMarker([p.lat, p.lng], {
+                    radius: 7,
+                    color: '#D4A24C',
+                    weight: 2,
+                    fillColor: '#1C2B22',
+                    fillOpacity: 1
+                }).addTo(map);
+
+                if (p.label) {
+                    marker.bindTooltip(p.label, { permanent: false, direction: 'top' });
+                }
+            });
+
+            map.fitBounds(latlngs, { padding: [30, 30] });
+        }
+    };
+</script>
+</body>
+
+</html>

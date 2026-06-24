@@ -15,6 +15,7 @@ public class AppDbContext : DbContext
     public DbSet<TourRoutePoint> TourRoutePoints => Set<TourRoutePoint>();
     public DbSet<TourDeparture> TourDepartures => Set<TourDeparture>();
     public DbSet<Booking> Bookings => Set<Booking>();
+    public DbSet<Completion> Completions => Set<Completion>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -54,6 +55,30 @@ public class AppDbContext : DbContext
             .HasOne(b => b.TourDeparture)
             .WithMany(td => td.Bookings)
             .HasForeignKey(b => b.TourDepartureId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<Completion>()
+            .HasOne(c => c.Booking)
+            .WithMany()
+            .HasForeignKey(c => c.BookingId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<Completion>()
+            .HasOne(c => c.User)
+            .WithMany()
+            .HasForeignKey(c => c.UserId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<Completion>()
+            .HasOne(c => c.Tour)
+            .WithMany()
+            .HasForeignKey(c => c.TourId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<Completion>()
+            .HasOne(c => c.ConfirmedByOperator)
+            .WithMany()
+            .HasForeignKey(c => c.ConfirmedByOperatorId)
             .OnDelete(DeleteBehavior.Restrict);
     }
 }

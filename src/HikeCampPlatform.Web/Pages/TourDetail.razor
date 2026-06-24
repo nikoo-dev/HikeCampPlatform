@@ -1,0 +1,233 @@
+@page "/tours/{TourId:int}"
+@using System.Net.Http.Json
+@inject HttpClient Http
+@inject HikeCampPlatform.Web.Services.AuthState AuthState
+@inject IJSRuntime JS
+
+@if (isLoading)
+{
+    <p>Loading tour details...</p>
+}
+else if (tour == null)
+{
+    <p>Tour not found.</p>
+}
+else
+{
+    <div class="breadcrumb font-mono">@tour.Country @(string.IsNullOrEmpty(tour.Region) ? "" : $"/ {tour.Region}")</div>
+    <h1>@tour.Title</h1>
+    <p style="color: var(--sage-light); margin-bottom: 1rem;">Operated by @tour.OperatorCompanyName</p>
+
+    <div class="signpost">
+        <div class="signpost-item">
+            <div class="signpost-label">Duration</div>
+            <div class="signpost-value">@tour.DurationDays days</div>
+        </div>
+        <div class="signpost-item">
+            <div class="signpost-label">Difficulty</div>
+            <div class="signpost-value">@DifficultyName(tour.DifficultyLevel)</div>
+        </div>
+        <div class="signpost-item">
+            <div class="signpost-label">Price</div>
+            <div class="signpost-value">@tour.PricePerPerson.ToString("0") @tour.Currency</div>
+        </div>
+        <div class="signpost-item">
+            <div class="signpost-label">Type</div>
+            <div class="signpost-value">@TypeName(tour.Type)</div>
+        </div>
+    </div>
+
+    <div id="map" class="trail-map" style="margin-bottom: 2rem;"></div>
+
+    <div style="display: grid; grid-template-columns: 1fr 300px; gap: 2.5rem;">
+        <div>
+            <div class="section-label">About this trek</div>
+            <p style="opacity: 0.9;">@tour.Description</p>
+        </div>
+
+        <div class="booking-card">
+            <div class="section-label">Departures</div>
+
+            @if (departures == null || departures.Count == 0)
+            {
+                <p style="font-size: 0.85rem; color: var(--sage-light);">No upcoming departures.</p>
+            }
+            else
+            {
+                @foreach (var d in departures)
+                {
+                    <div style="display: flex; justify-content: space-between; padding: 0.6rem 0; border-top: 1px solid rgba(139,115,85,0.25); font-size: 0.85rem;">
+                        <span class="font-mono">@d.DepartureDate.ToString("yyyy-MM-dd")</span>
+                        <span style="color: var(--sage-light);">@d.SpotsRemaining spots</span>
+                        @if (AuthState.IsLoggedIn)
+                        {
+                            <a href="#" @onclick="() => SelectDeparture(d.Id)" @onclick:preventDefault style="color: var(--trail-gold);">Select</a>
+                        }
+                    </div>
+                }
+            }
+
+            @if (!AuthState.IsLoggedIn)
+            {
+                <p style="font-size: 0.85rem; margin-top: 1rem;"><a href="/login">Log in</a> to book.</p>
+            }
+
+            @if (selectedDepartureId.HasValue)
+            {
+                <div style="margin-top: 1rem;">
+                    <label style="font-size: 0.8rem; color: var(--sage-light);">Participants</label>
+                    <input type="number" min="1" @bind="numberOfParticipants"
+                           style="width: 100%; padding: 0.5rem; margin: 0.4rem 0 0.8rem; background: var(--forest-deep); border: 1px solid var(--trail-brown); color: var(--parchment); border-radius: 3px;" />
+                    <button class="btn-trail" style="width: 100%;" @onclick="SubmitBooking" disabled="@isBooking">
+                        @(isBooking ? "Booking..." : "Confirm booking")
+                    </button>
+                </div>
+            }
+
+            @if (bookingResult != null)
+            {
+                <p style="margin-top: 1rem; color: var(--sage-light); font-size: 0.85rem;">
+                    Booked. Total: @bookingResult.TotalPrice.ToString("0.00") @tour.Currency (pending payment).
+                </p>
+            }
+
+            @if (!string.IsNullOrEmpty(errorMessage))
+            {
+                <p style="margin-top: 1rem; color: #D88; font-size: 0.85rem;">@errorMessage</p>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public int TourId { get; set; }
+
+    private TourResponse? tour;
+    private List<RoutePoint>? routePoints;
+    private List<DepartureResponse>? departures;
+    private bool isLoading = true;
+    private bool isBooking = false;
+    private int? selectedDepartureId;
+    private int numberOfParticipants = 1;
+    private BookingResponse? bookingResult;
+    private string? errorMessage;
+    private bool mapInitialized = false;
+
+    public class RoutePoint
+    {
+        public double Latitude { get; set; }
+        public double Longitude { get; set; }
+        public int SequenceOrder { get; set; }
+        public string? Label { get; set; }
+    }
+
+    public class TourResponse
+    {
+        public int Id { get; set; }
+        public string OperatorCompanyName { get; set; } = string.Empty;
+        public string Title { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public int Type { get; set; }
+        public string Country { get; set; } = string.Empty;
+        public string? Region { get; set; }
+        public int DifficultyLevel { get; set; }
+        public decimal PricePerPerson { get; set; }
+        public string Currency { get; set; } = string.Empty;
+        public int DurationDays { get; set; }
+        public List<RoutePoint> RoutePoints { get; set; } = new();
+    }
+
+    public class DepartureResponse
+    {
+        public int Id { get; set; }
+        public DateTime DepartureDate { get; set; }
+        public int SpotsRemaining { get; set; }
+    }
+
+    public class BookingResponse
+    {
+        public int Id { get; set; }
+        public decimal TotalPrice { get; set; }
+    }
+
+    private string DifficultyName(int level) => level switch
+    {
+        0 => "Easy", 1 => "Moderate", 2 => "Hard", 3 => "Extreme", _ => "Unknown"
+    };
+
+    private string TypeName(int type) => type switch
+    {
+        0 => "Hiking", 1 => "Camping", 2 => "Trekking", 3 => "Climbing", _ => "Other"
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            tour = await Http.GetFromJsonAsync<TourResponse>($"/api/tours/{TourId}");
+            departures = await Http.GetFromJsonAsync<List<DepartureResponse>>($"/api/tours/{TourId}/departures");
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error loading tour: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (tour != null && tour.RoutePoints.Count > 0 && !mapInitialized)
+        {
+            mapInitialized = true;
+            var points = tour.RoutePoints
+                .OrderBy(p => p.SequenceOrder)
+                .Select(p => new { lat = p.Latitude, lng = p.Longitude, label = p.Label })
+                .ToArray();
+
+            await JS.InvokeVoidAsync("trailMap.render", "map", points);
+        }
+    }
+
+    private void SelectDeparture(int departureId)
+    {
+        selectedDepartureId = departureId;
+        bookingResult = null;
+        errorMessage = null;
+    }
+
+    private async Task SubmitBooking()
+    {
+        if (!selectedDepartureId.HasValue) return;
+
+        isBooking = true;
+        errorMessage = null;
+
+        try
+        {
+            var request = new { TourDepartureId = selectedDepartureId.Value, NumberOfParticipants = numberOfParticipants };
+            var response = await Http.PostAsJsonAsync("/api/bookings", request);
+
+            if (response.IsSuccessStatusCode)
+            {
+                bookingResult = await response.Content.ReadFromJsonAsync<BookingResponse>();
+                selectedDepartureId = null;
+            }
+            else
+            {
+                errorMessage = "Booking failed: " + await response.Content.ReadAsStringAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error: {ex.Message}";
+        }
+        finally
+        {
+            isBooking = false;
+        }
+    }
+}

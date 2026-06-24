@@ -1,0 +1,89 @@
+﻿@inject HikeCampPlatform.Web.Services.AuthState AuthState
+@inject HttpClient Http
+@inject IJSRuntime JS
+@implements IDisposable
+
+<div class="top-row ps-3 navbar navbar-dark">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="">HikeCampPlatform</a>
+        <button title="Navigation menu" class="navbar-toggler" @onclick="ToggleNavMenu">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+    </div>
+</div>
+
+<div class="@NavMenuCssClass nav-scrollable" @onclick="ToggleNavMenu">
+    <nav class="nav flex-column">
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
+            </NavLink>
+        </div>
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="tours">
+                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Browse Tours
+            </NavLink>
+        </div>
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="leaderboard">
+                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Leaderboard
+            </NavLink>
+        </div>
+
+        @if (AuthState.IsLoggedIn)
+        {
+            <div class="nav-item px-3">
+                <span class="nav-link">Welcome, @AuthState.FullName</span>
+            </div>
+            <div class="nav-item px-3">
+                <a class="nav-link" href="#" @onclick="HandleLogout" @onclick:preventDefault>
+                    Logout
+                </a>
+            </div>
+        }
+        else
+        {
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="login">
+                    <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Login
+                </NavLink>
+            </div>
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="register">
+                    <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Register
+                </NavLink>
+            </div>
+        }
+    </nav>
+</div>
+
+@code {
+    private bool collapseNavMenu = true;
+
+    private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
+
+    private void ToggleNavMenu()
+    {
+        collapseNavMenu = !collapseNavMenu;
+    }
+
+    protected override void OnInitialized()
+    {
+        AuthState.OnChange += StateHasChanged;
+    }
+
+  private async Task HandleLogout()
+    {
+        var confirmed = await JS.InvokeAsync<bool>("confirm", "Are you sure you want to log out?");
+        if (confirmed)
+    {
+        await AuthState.LogoutAsync();
+        AuthState.ApplyAuthHeader(Http);
+    }
+}
+
+    public void Dispose()
+    {
+        AuthState.OnChange -= StateHasChanged;
+    }
+}
