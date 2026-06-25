@@ -1,0 +1,9 @@
+<div class="state-block state-loading">
+    <div class="state-spinner"></div>
+    <span class="font-mono">@Message</span>
+</div>
+
+@code {
+    [Parameter]
+    public string Message { get; set; } = "Loading...";
+}

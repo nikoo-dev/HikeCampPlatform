@@ -1,5 +1,4 @@
 ﻿@page "/"
-@using System.Net.Http.Json
 @inject HttpClient Http
 
 <div class="hero">
@@ -13,11 +12,11 @@
     <div class="section-label">Featured tours</div>
     @if (isLoadingTours)
     {
-        <p style="color: var(--sage-light);">Loading...</p>
+        <LoadingState Message="Loading tours..." />
     }
     else if (featuredTours == null || featuredTours.Count == 0)
     {
-        <p style="color: var(--sage-light);">No published tours yet.</p>
+        <EmptyState Message="No published tours yet." />
     }
     else
     {
@@ -42,11 +41,11 @@
     <div class="section-label">Top of the leaderboard</div>
     @if (isLoadingLeaderboard)
     {
-        <p style="color: var(--sage-light);">Loading...</p>
+        <LoadingState Message="Loading leaderboard..." />
     }
     else if (topEntries == null || topEntries.Count == 0)
     {
-        <p style="color: var(--sage-light);">No completions yet -- be the first.</p>
+        <EmptyState Message="No completions yet -- be the first." />
     }
     else
     {

@@ -1,5 +1,4 @@
 @page "/tours"
-@using System.Net.Http.Json
 @inject HttpClient Http
 
 <div class="breadcrumb">Browse</div>
@@ -7,34 +6,80 @@
 
 @if (isLoading)
 {
-    <p style="color: var(--sage-light);">Loading tours...</p>
+    <LoadingState Message="Loading tours..." />
 }
-else if (tours == null || tours.Count == 0)
+else if (allTours == null || allTours.Count == 0)
 {
-    <p style="color: var(--sage-light);">No published tours yet.</p>
+    <EmptyState Message="No published tours yet." />
 }
 else
 {
-    <div class="tour-grid">
-        @foreach (var tour in tours)
-        {
-            <a href="/tours/@tour.Id" class="tour-card">
-                <div class="tour-card-type font-mono">@TypeName(tour.Type)</div>
-                <h3>@tour.Title</h3>
-                <div class="tour-card-location font-mono">@tour.Country @(string.IsNullOrEmpty(tour.Region) ? "" : $"/ {tour.Region}")</div>
-                <p class="tour-card-desc">@Truncate(tour.Description, 110)</p>
-                <div class="tour-card-footer">
-                    <span class="tour-card-price">@tour.PricePerPerson.ToString("0") <span class="font-mono">@tour.Currency</span></span>
-                    <span class="tour-card-difficulty">@DifficultyName(tour.DifficultyLevel)</span>
-                </div>
-            </a>
-        }
+    <div class="filter-bar">
+        <div class="filter-group">
+            <label class="filter-label">Country</label>
+            <select class="filter-select" @bind="selectedCountry">
+                <option value="">All</option>
+                @foreach (var country in countries)
+                {
+                    <option value="@country">@country</option>
+                }
+            </select>
+        </div>
+
+        <div class="filter-group">
+            <label class="filter-label">Difficulty</label>
+            <select class="filter-select" @bind="selectedDifficulty">
+                <option value="-1">All</option>
+                <option value="0">Easy</option>
+                <option value="1">Moderate</option>
+                <option value="2">Hard</option>
+                <option value="3">Extreme</option>
+            </select>
+        </div>
+
+        <div class="filter-group">
+            <label class="filter-label">Sort by</label>
+            <select class="filter-select" @bind="sortBy">
+                <option value="default">Default</option>
+                <option value="price_asc">Price: low to high</option>
+                <option value="price_desc">Price: high to low</option>
+                <option value="duration_asc">Duration: shortest first</option>
+            </select>
+        </div>
     </div>
+
+    @if (FilteredTours.Count == 0)
+    {
+        <EmptyState Message="No tours match these filters." />
+    }
+    else
+    {
+        <div class="tour-grid">
+            @foreach (var tour in FilteredTours)
+            {
+                <a href="/tours/@tour.Id" class="tour-card">
+                    <div class="tour-card-type font-mono">@TypeName(tour.Type)</div>
+                    <h3>@tour.Title</h3>
+                    <div class="tour-card-location font-mono">@tour.Country @(string.IsNullOrEmpty(tour.Region) ? "" : $"/ {tour.Region}")</div>
+                    <p class="tour-card-desc">@Truncate(tour.Description, 110)</p>
+                    <div class="tour-card-footer">
+                        <span class="tour-card-price">@tour.PricePerPerson.ToString("0") <span class="font-mono">@tour.Currency</span></span>
+                        <span class="tour-card-difficulty">@DifficultyName(tour.DifficultyLevel)</span>
+                    </div>
+                </a>
+            }
+        </div>
+    }
 }
 
 @code {
-    private List<TourResponse>? tours;
+    private List<TourResponse>? allTours;
     private bool isLoading = true;
+    private List<string> countries = new();
+
+    private string selectedCountry = "";
+    private string selectedDifficulty = "-1";
+    private string sortBy = "default";
 
     public class TourResponse
     {
@@ -49,6 +94,36 @@ else
         public int DurationDays { get; set; }
         public decimal PricePerPerson { get; set; }
         public string Currency { get; set; } = string.Empty;
+    }
+
+    private List<TourResponse> FilteredTours
+    {
+        get
+        {
+            if (allTours == null) return new List<TourResponse>();
+
+            var result = allTours.AsEnumerable();
+
+            if (!string.IsNullOrEmpty(selectedCountry))
+            {
+                result = result.Where(t => t.Country == selectedCountry);
+            }
+
+            if (int.TryParse(selectedDifficulty, out var diff) && diff >= 0)
+            {
+                result = result.Where(t => t.DifficultyLevel == diff);
+            }
+
+            result = sortBy switch
+            {
+                "price_asc" => result.OrderBy(t => t.PricePerPerson),
+                "price_desc" => result.OrderByDescending(t => t.PricePerPerson),
+                "duration_asc" => result.OrderBy(t => t.DurationDays),
+                _ => result
+            };
+
+            return result.ToList();
+        }
     }
 
     private string DifficultyName(int level) => level switch
@@ -68,7 +143,8 @@ else
     {
         try
         {
-            tours = await Http.GetFromJsonAsync<List<TourResponse>>("/api/tours");
+            allTours = await Http.GetFromJsonAsync<List<TourResponse>>("/api/tours");
+            countries = allTours?.Select(t => t.Country).Distinct().OrderBy(c => c).ToList() ?? new();
         }
         finally
         {

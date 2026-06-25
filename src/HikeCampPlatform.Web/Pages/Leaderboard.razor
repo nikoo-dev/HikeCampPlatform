@@ -1,6 +1,6 @@
 @page "/leaderboard"
-@using System.Net.Http.Json
 @inject HttpClient Http
+@inject HikeCampPlatform.Web.Services.AuthState AuthState
 
 <div class="breadcrumb">Standings</div>
 <h1>Leaderboard</h1>
@@ -8,20 +8,32 @@
 
 @if (isLoading)
 {
-    <p style="color: var(--sage-light);">Loading leaderboard...</p>
+    <LoadingState Message="Loading leaderboard..." />
 }
 else if (entries == null || entries.Count == 0)
 {
-    <p style="color: var(--sage-light);">No completed tours yet. Be the first!</p>
+    <EmptyState Message="No completed tours yet. Be the first!" />
 }
 else
 {
+    @if (AuthState.IsLoggedIn && myEntry == null)
+    {
+        <div class="you-not-ranked">You haven't completed any verified tours yet. <a href="/tours">Browse tours</a> to get started.</div>
+    }
+
     <div class="leaderboard-list">
         @foreach (var entry in entries)
         {
-            <div class="leaderboard-row @(entry.Rank <= 3 ? "leaderboard-row-top" : "")">
+            var isMe = AuthState.IsLoggedIn && entry.UserId == AuthState.UserId;
+            <div class="leaderboard-row @(entry.Rank <= 3 ? "leaderboard-row-top" : "") @(isMe ? "leaderboard-row-me" : "")">
                 <div class="leaderboard-rank font-mono">#@entry.Rank</div>
-                <div class="leaderboard-name">@entry.FullName</div>
+                <div class="leaderboard-name">
+                    @entry.FullName
+                    @if (isMe)
+                    {
+                        <span class="you-badge font-mono">YOU</span>
+                    }
+                </div>
                 <div class="leaderboard-count">
                     <span class="font-mono">@entry.CompletedTourCount</span>
                     <span class="leaderboard-count-label">completed</span>
@@ -34,6 +46,9 @@ else
 @code {
     private List<LeaderboardEntry>? entries;
     private bool isLoading = true;
+
+    private LeaderboardEntry? myEntry =>
+        AuthState.IsLoggedIn ? entries?.FirstOrDefault(e => e.UserId == AuthState.UserId) : null;
 
     public class LeaderboardEntry
     {

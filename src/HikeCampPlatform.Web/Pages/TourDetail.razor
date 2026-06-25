@@ -1,16 +1,15 @@
 @page "/tours/{TourId:int}"
-@using System.Net.Http.Json
 @inject HttpClient Http
 @inject HikeCampPlatform.Web.Services.AuthState AuthState
 @inject IJSRuntime JS
 
 @if (isLoading)
 {
-    <p>Loading tour details...</p>
+    <LoadingState Message="Loading tour details..." />
 }
 else if (tour == null)
 {
-    <p>Tour not found.</p>
+    <EmptyState Message="Tour not found." />
 }
 else
 {
@@ -56,12 +55,16 @@ else
             {
                 @foreach (var d in departures)
                 {
-                    <div style="display: flex; justify-content: space-between; padding: 0.6rem 0; border-top: 1px solid rgba(139,115,85,0.25); font-size: 0.85rem;">
-                        <span class="font-mono">@d.DepartureDate.ToString("yyyy-MM-dd")</span>
-                        <span style="color: var(--sage-light);">@d.SpotsRemaining spots</span>
-                        @if (AuthState.IsLoggedIn)
+                    var isSelected = selectedDepartureId == d.Id;
+                    <div class="departure-option @(isSelected ? "departure-option-selected" : "")"
+                         @onclick="() => SelectDeparture(d.Id)">
+                        <div>
+                            <div class="font-mono departure-date">@d.DepartureDate.ToString("yyyy-MM-dd")</div>
+                            <div class="departure-spots">@d.SpotsRemaining spots left</div>
+                        </div>
+                        @if (isSelected)
                         {
-                            <a href="#" @onclick="() => SelectDeparture(d.Id)" @onclick:preventDefault style="color: var(--trail-gold);">Select</a>
+                            <span class="departure-check">&#10003;</span>
                         }
                     </div>
                 }
@@ -74,11 +77,16 @@ else
 
             @if (selectedDepartureId.HasValue)
             {
-                <div style="margin-top: 1rem;">
-                    <label style="font-size: 0.8rem; color: var(--sage-light);">Participants</label>
-                    <input type="number" min="1" @bind="numberOfParticipants"
-                           style="width: 100%; padding: 0.5rem; margin: 0.4rem 0 0.8rem; background: var(--forest-deep); border: 1px solid var(--trail-brown); color: var(--parchment); border-radius: 3px;" />
-                    <button class="btn-trail" style="width: 100%;" @onclick="SubmitBooking" disabled="@isBooking">
+                <div class="booking-confirm">
+                    <label class="filter-label">Participants</label>
+                    <input type="number" min="1" @bind="numberOfParticipants" class="auth-input" style="margin-bottom: 0.85rem;" />
+
+                    <div class="booking-total">
+                        <span>Total</span>
+                        <span class="font-mono booking-total-value">@((tour!.PricePerPerson * numberOfParticipants).ToString("0.00")) @tour.Currency</span>
+                    </div>
+
+                    <button class="btn-trail" style="width: 100%; margin-top: 0.85rem;" @onclick="SubmitBooking" disabled="@isBooking">
                         @(isBooking ? "Booking..." : "Confirm booking")
                     </button>
                 </div>
@@ -86,9 +94,9 @@ else
 
             @if (bookingResult != null)
             {
-                <p style="margin-top: 1rem; color: var(--sage-light); font-size: 0.85rem;">
-                    Booked. Total: @bookingResult.TotalPrice.ToString("0.00") @tour.Currency (pending payment).
-                </p>
+                <div class="booking-success">
+                    Booked. Total @bookingResult.TotalPrice.ToString("0.00") @tour.Currency. Payment is pending.
+                </div>
             }
 
             @if (!string.IsNullOrEmpty(errorMessage))
@@ -104,7 +112,6 @@ else
     public int TourId { get; set; }
 
     private TourResponse? tour;
-    private List<RoutePoint>? routePoints;
     private List<DepartureResponse>? departures;
     private bool isLoading = true;
     private bool isBooking = false;

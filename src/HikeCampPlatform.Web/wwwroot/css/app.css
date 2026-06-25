@@ -1,3 +1,212 @@
+.leaderboard-row-me {
+    background: rgba(212, 162, 76, 0.1);
+    border-left: 3px solid var(--trail-gold);
+    padding-left: calc(0.5rem - 3px);
+}
+
+.you-badge {
+    display: inline-block;
+    margin-left: 0.6rem;
+    font-size: 0.62rem;
+    letter-spacing: 0.05em;
+    color: var(--forest-deep);
+    background: var(--trail-gold);
+    padding: 0.1rem 0.4rem;
+    border-radius: 2px;
+    vertical-align: middle;
+}
+
+.you-not-ranked {
+    background: rgba(92, 122, 92, 0.1);
+    border: 1px solid var(--sage);
+    border-radius: 4px;
+    padding: 0.85rem 1rem;
+    font-size: 0.85rem;
+    color: var(--sage-light);
+    margin-bottom: 1.5rem;
+}
+
+.you-not-ranked a {
+    color: var(--trail-gold);
+}
+.departure-option {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 0.6rem;
+    border-top: 1px solid rgba(139, 115, 85, 0.25);
+    cursor: pointer;
+    border-radius: 3px;
+    transition: background 0.12s ease;
+}
+
+.departure-option:hover {
+    background: rgba(212, 162, 76, 0.06);
+}
+
+.departure-option-selected {
+    background: rgba(212, 162, 76, 0.12);
+}
+
+.departure-date {
+    font-size: 0.9rem;
+}
+
+.departure-spots {
+    font-size: 0.72rem;
+    color: var(--sage-light);
+    margin-top: 0.15rem;
+}
+
+.departure-check {
+    color: var(--trail-gold);
+    font-weight: 600;
+}
+
+.booking-confirm {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(139, 115, 85, 0.3);
+}
+
+.booking-total {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-size: 0.85rem;
+    color: var(--sage-light);
+}
+
+.booking-total-value {
+    font-size: 1.1rem;
+    color: var(--trail-gold);
+}
+
+.booking-success {
+    margin-top: 1rem;
+    padding: 0.75rem;
+    background: rgba(92, 122, 92, 0.15);
+    border: 1px solid var(--sage);
+    border-radius: 3px;
+    font-size: 0.85rem;
+    color: var(--sage-light);
+}
+.filter-bar {
+    display: flex;
+    gap: 1.5rem;
+    margin: 1.5rem 0 2rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid rgba(139, 115, 85, 0.3);
+}
+
+.filter-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.filter-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--trail-brown);
+    margin-bottom: 0.35rem;
+}
+
+.filter-select {
+    background: var(--forest);
+    border: 1px solid var(--trail-brown);
+    color: var(--parchment);
+    padding: 0.45rem 0.6rem;
+    border-radius: 3px;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.85rem;
+    min-width: 140px;
+}
+
+.filter-select:focus {
+    outline: none;
+    border-color: var(--trail-gold);
+}
+.loading-progress circle {
+    fill: none;
+    stroke: rgba(212, 162, 76, 0.2);
+    stroke-width: 0.6rem;
+    transform-origin: 50% 50%;
+    transform: rotate(-90deg);
+}
+
+.loading-progress circle:last-child {
+    stroke: var(--trail-gold);
+    transition: stroke-dasharray 0.05s ease-in-out;
+}
+
+.loading-progress-text {
+    position: absolute;
+    text-align: center;
+    font-family: 'Fjalla One', sans-serif;
+    color: var(--parchment);
+}
+
+.loading-progress-text::after {
+    content: var(--blazor-load-percentage-text, "Loading");
+}
+
+#app {
+    background: var(--forest-deep);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.state-block {
+    padding: 2rem 0;
+    text-align: center;
+    color: var(--sage-light);
+    font-size: 0.9rem;
+}
+
+.state-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+}
+
+.state-spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(212, 162, 76, 0.25);
+    border-top-color: var(--trail-gold);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.state-empty {
+    border: 1px dashed rgba(139, 115, 85, 0.4);
+    border-radius: 4px;
+}
+.validation-summary {
+    background: rgba(216, 136, 136, 0.1);
+    border: 1px solid #D88;
+    border-radius: 3px;
+    padding: 0.75rem 1rem;
+    margin-bottom: 1rem;
+    list-style: none;
+}
+
+.validation-summary li {
+    color: #D88;
+    font-size: 0.85rem;
+}
+
+.input-validation-error {
+    border-color: #D88 !important;
+}
 .hero {
     padding: 3rem 0 2.5rem;
     border-bottom: 1px solid rgba(139, 115, 85, 0.3);
