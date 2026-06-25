@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using HikeCampPlatform.Api.Data;
-using HikeCampPlatform.Api.DTOs;
+using HikeCampPlatform.Api.Services;
 
 namespace HikeCampPlatform.Api.Controllers;
 
@@ -10,39 +10,30 @@ namespace HikeCampPlatform.Api.Controllers;
 public class LeaderboardController : ControllerBase
 {
     private readonly AppDbContext _db;
+    private readonly LeaderboardService _leaderboardService;
 
-    public LeaderboardController(AppDbContext db)
+    public LeaderboardController(AppDbContext db, LeaderboardService leaderboardService)
     {
         _db = db;
+        _leaderboardService = leaderboardService;
     }
 
     // GET /api/leaderboard -- public
     [HttpGet]
-    public async Task<ActionResult<List<LeaderboardEntryResponse>>> GetLeaderboard()
+    public async Task<ActionResult<List<LeaderboardEntry>>> GetLeaderboard()
     {
-        var grouped = await _db.Completions
-            .Where(c => !c.IsSelfReported) // only verified completions count
+        var rawCompletions = await _db.Completions
             .Include(c => c.User)
-            .GroupBy(c => new { c.UserId, c.User!.FullName })
-            .Select(g => new
+            .Select(c => new CompletionRecord
             {
-                g.Key.UserId,
-                g.Key.FullName,
-                Count = g.Count()
+                UserId = c.UserId,
+                FullName = c.User!.FullName,
+                IsSelfReported = c.IsSelfReported
             })
-            .OrderByDescending(x => x.Count)
             .ToListAsync();
 
-        var response = grouped
-            .Select((entry, index) => new LeaderboardEntryResponse
-            {
-                UserId = entry.UserId,
-                FullName = entry.FullName,
-                CompletedTourCount = entry.Count,
-                Rank = index + 1
-            })
-            .ToList();
+        var leaderboard = _leaderboardService.BuildRankedLeaderboard(rawCompletions);
 
-        return Ok(response);
+        return Ok(leaderboard);
     }
 }

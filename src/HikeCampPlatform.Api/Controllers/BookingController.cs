@@ -14,10 +14,12 @@ namespace HikeCampPlatform.Api.Controllers;
 public class BookingController : ControllerBase
 {
     private readonly AppDbContext _db;
+    private readonly Services.BookingService _bookingService;
 
-    public BookingController(AppDbContext db)
+    public BookingController(AppDbContext db, Services.BookingService bookingService)
     {
         _db = db;
+        _bookingService = bookingService;
     }
 
     // POST /api/bookings -- User only
@@ -46,13 +48,13 @@ public class BookingController : ControllerBase
             return NotFound(new { message = "Departure not found." });
         }
 
-        var spotsRemaining = departure.MaxParticipants - departure.CurrentParticipants;
-        if (request.NumberOfParticipants > spotsRemaining)
+        if (!_bookingService.HasEnoughCapacity(departure.MaxParticipants, departure.CurrentParticipants, request.NumberOfParticipants))
         {
+            var spotsRemaining = _bookingService.CalculateSpotsRemaining(departure.MaxParticipants, departure.CurrentParticipants);
             return BadRequest(new { message = $"Only {spotsRemaining} spots remaining for this departure." });
         }
 
-        var totalPrice = departure.Tour!.PricePerPerson * request.NumberOfParticipants;
+        var totalPrice = _bookingService.CalculateTotalPrice(departure.Tour!.PricePerPerson, request.NumberOfParticipants);
 
         var paymentIntentService = new PaymentIntentService();
         var paymentIntent = await paymentIntentService.CreateAsync(new PaymentIntentCreateOptions
