@@ -4,36 +4,35 @@
 @inject NavigationManager Navigation
 @inject HikeCampPlatform.Web.Services.AuthState AuthState
 
-<h3>Create an Account</h3>
+<div class="auth-page">
+    <div class="breadcrumb">Account</div>
+    <h1>Create an account</h1>
 
-<EditForm Model="@registerModel" OnValidSubmit="HandleRegister">
-    <DataAnnotationsValidator />
-    <ValidationSummary />
+    <EditForm Model="@registerModel" OnValidSubmit="HandleRegister" class="auth-form">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
 
-    <div class="mb-3">
-        <label>Full Name</label>
-        <InputText class="form-control" @bind-Value="registerModel.FullName" />
-    </div>
+        <label class="auth-label">Full name</label>
+        <InputText class="auth-input" @bind-Value="registerModel.FullName" />
 
-    <div class="mb-3">
-        <label>Email</label>
-        <InputText class="form-control" @bind-Value="registerModel.Email" />
-    </div>
+        <label class="auth-label">Email</label>
+        <InputText class="auth-input" @bind-Value="registerModel.Email" />
 
-    <div class="mb-3">
-        <label>Password</label>
-        <InputText type="password" class="form-control" @bind-Value="registerModel.Password" />
-    </div>
+        <label class="auth-label">Password</label>
+        <InputText type="password" class="auth-input" @bind-Value="registerModel.Password" />
 
-    <button type="submit" class="btn btn-primary" disabled="@isLoading">
-        @(isLoading ? "Creating account..." : "Register")
-    </button>
-</EditForm>
+        <button type="submit" class="btn-trail" style="width: 100%; margin-top: 0.5rem;" disabled="@isLoading">
+            @(isLoading ? "Creating account..." : "Register")
+        </button>
+    </EditForm>
 
-@if (!string.IsNullOrEmpty(errorMessage))
-{
-    <div class="alert alert-danger mt-3">@errorMessage</div>
-}
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <p class="auth-error">@errorMessage</p>
+    }
+
+    <p class="auth-switch">Already have an account? <a href="/login">Log in</a></p>
+</div>
 
 @code {
     private RegisterModel registerModel = new();
@@ -77,6 +76,7 @@
                 if (result != null)
                 {
                     await AuthState.SetUserAsync(result.Token, result.UserId, result.FullName, "User");
+                    AuthState.ApplyAuthHeader(Http);
                     Navigation.NavigateTo("/");
                 }
             }

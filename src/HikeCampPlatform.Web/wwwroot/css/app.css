@@ -1,3 +1,243 @@
+.auth-page {
+    max-width: 380px;
+    margin: 2rem auto 0;
+}
+
+.auth-form {
+    margin-top: 1.5rem;
+    display: flex;
+    flex-direction: column;
+}
+
+.auth-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--trail-brown);
+    margin-bottom: 0.4rem;
+    margin-top: 1rem;
+}
+
+.auth-input {
+    background: var(--forest);
+    border: 1px solid var(--trail-brown);
+    color: var(--parchment);
+    padding: 0.65rem 0.75rem;
+    border-radius: 3px;
+    font-family: 'Inter', sans-serif;
+}
+
+.auth-input:focus {
+    outline: none;
+    border-color: var(--trail-gold);
+}
+
+.auth-error {
+    color: #D88;
+    font-size: 0.85rem;
+    margin-top: 1rem;
+}
+
+.auth-switch {
+    font-size: 0.85rem;
+    color: var(--sage-light);
+    margin-top: 1.5rem;
+    text-align: center;
+}
+
+.validation-message {
+    color: #D88;
+    font-size: 0.8rem;
+}
+.leaderboard-list {
+    border-top: 1px solid rgba(139, 115, 85, 0.3);
+}
+
+.leaderboard-row {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    padding: 1rem 0.5rem;
+    border-bottom: 1px solid rgba(139, 115, 85, 0.25);
+}
+
+.leaderboard-row-top .leaderboard-rank {
+    color: var(--trail-gold);
+}
+
+.leaderboard-rank {
+    font-size: 1.1rem;
+    color: var(--trail-brown);
+    width: 3rem;
+}
+
+.leaderboard-name {
+    flex: 1;
+    font-size: 1rem;
+}
+
+.leaderboard-count {
+    text-align: right;
+}
+
+.leaderboard-count .font-mono {
+    font-size: 1.2rem;
+    color: var(--trail-gold);
+}
+
+.leaderboard-count-label {
+    font-size: 0.7rem;
+    color: var(--sage-light);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-left: 0.4rem;
+}
+.tour-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.25rem;
+    margin-top: 1.5rem;
+}
+
+.tour-card {
+    display: block;
+    background: var(--forest);
+    border: 1px solid var(--trail-brown);
+    border-radius: 4px;
+    padding: 1.25rem;
+    text-decoration: none;
+    transition: border-color 0.15s ease;
+}
+
+.tour-card:hover {
+    border-color: var(--trail-gold);
+}
+
+.tour-card-type {
+    font-size: 0.65rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--trail-gold);
+    margin-bottom: 0.5rem;
+}
+
+.tour-card h3 {
+    font-size: 1.2rem;
+    margin-bottom: 0.3rem;
+}
+
+.tour-card-location {
+    font-size: 0.72rem;
+    color: var(--sage-light);
+    margin-bottom: 0.75rem;
+}
+
+.tour-card-desc {
+    font-size: 0.85rem;
+    color: var(--parchment);
+    opacity: 0.85;
+    margin-bottom: 1rem;
+    line-height: 1.5;
+}
+
+.tour-card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 0.75rem;
+    border-top: 1px solid rgba(139, 115, 85, 0.3);
+}
+
+.tour-card-price {
+    font-family: 'Fjalla One', sans-serif;
+    font-size: 1.1rem;
+    color: var(--trail-gold);
+}
+
+.tour-card-difficulty {
+    font-size: 0.72rem;
+    color: var(--sage-light);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+.trail-page {
+    min-height: 100vh;
+    background: var(--forest-deep);
+}
+
+.trail-nav {
+    display: flex;
+    align-items: center;
+    gap: 1.75rem;
+    padding: 1.1rem 2rem;
+    border-bottom: 1px solid rgba(139, 115, 85, 0.3);
+}
+
+.trail-nav-brand {
+    font-family: 'Fjalla One', sans-serif;
+    font-size: 1.1rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--trail-gold);
+}
+
+.trail-nav-links {
+    display: flex;
+    gap: 1.5rem;
+}
+
+.trail-nav-spacer {
+    flex: 1;
+}
+
+.trail-link {
+    color: var(--parchment);
+    opacity: 0.75;
+    font-size: 0.88rem;
+    text-decoration: none;
+}
+
+.trail-link:hover {
+    opacity: 1;
+    color: var(--trail-gold);
+}
+
+.trail-link.active {
+    color: var(--trail-gold);
+    opacity: 1;
+}
+
+.trail-link-cta {
+    background: var(--trail-gold);
+    color: var(--forest-deep) !important;
+    opacity: 1 !important;
+    padding: 0.4rem 0.9rem;
+    border-radius: 3px;
+    font-family: 'Fjalla One', sans-serif;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.trail-nav-user {
+    color: var(--sage-light);
+    font-size: 0.82rem;
+}
+
+.trail-main {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 2rem 2rem 4rem;
+}
+
+.breadcrumb {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.05em;
+    color: var(--sage-light);
+    text-transform: uppercase;
+}
 :root {
     --forest: #1C2B22;
     --forest-deep: #131F19;

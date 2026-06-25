@@ -2,37 +2,33 @@
 @using System.Net.Http.Json
 @inject HttpClient Http
 
-<h3>Leaderboard</h3>
+<div class="breadcrumb">Standings</div>
+<h1>Leaderboard</h1>
+<p style="color: var(--sage-light); margin-bottom: 1.5rem;">Ranked by verified, operator-confirmed completions.</p>
 
 @if (isLoading)
 {
-    <p>Loading leaderboard...</p>
+    <p style="color: var(--sage-light);">Loading leaderboard...</p>
 }
 else if (entries == null || entries.Count == 0)
 {
-    <p>No completed tours yet. Be the first!</p>
+    <p style="color: var(--sage-light);">No completed tours yet. Be the first!</p>
 }
 else
 {
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Rank</th>
-                <th>Name</th>
-                <th>Completed Tours</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var entry in entries)
-            {
-                <tr>
-                    <td>@entry.Rank</td>
-                    <td>@entry.FullName</td>
-                    <td>@entry.CompletedTourCount</td>
-                </tr>
-            }
-        </tbody>
-    </table>
+    <div class="leaderboard-list">
+        @foreach (var entry in entries)
+        {
+            <div class="leaderboard-row @(entry.Rank <= 3 ? "leaderboard-row-top" : "")">
+                <div class="leaderboard-rank font-mono">#@entry.Rank</div>
+                <div class="leaderboard-name">@entry.FullName</div>
+                <div class="leaderboard-count">
+                    <span class="font-mono">@entry.CompletedTourCount</span>
+                    <span class="leaderboard-count-label">completed</span>
+                </div>
+            </div>
+        }
+    </div>
 }
 
 @code {
@@ -52,10 +48,6 @@ else
         try
         {
             entries = await Http.GetFromJsonAsync<List<LeaderboardEntry>>("/api/leaderboard");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error loading leaderboard: {ex.Message}");
         }
         finally
         {

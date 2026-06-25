@@ -4,31 +4,32 @@
 @inject NavigationManager Navigation
 @inject HikeCampPlatform.Web.Services.AuthState AuthState
 
-<h3>Log In</h3>
+<div class="auth-page">
+    <div class="breadcrumb">Account</div>
+    <h1>Log in</h1>
 
-<EditForm Model="@loginModel" OnValidSubmit="HandleLogin">
-    <DataAnnotationsValidator />
-    <ValidationSummary />
+    <EditForm Model="@loginModel" OnValidSubmit="HandleLogin" class="auth-form">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
 
-    <div class="mb-3">
-        <label>Email</label>
-        <InputText class="form-control" @bind-Value="loginModel.Email" />
-    </div>
+        <label class="auth-label">Email</label>
+        <InputText class="auth-input" @bind-Value="loginModel.Email" />
 
-    <div class="mb-3">
-        <label>Password</label>
-        <InputText type="password" class="form-control" @bind-Value="loginModel.Password" />
-    </div>
+        <label class="auth-label">Password</label>
+        <InputText type="password" class="auth-input" @bind-Value="loginModel.Password" />
 
-    <button type="submit" class="btn btn-primary" disabled="@isLoading">
-        @(isLoading ? "Logging in..." : "Log In")
-    </button>
-</EditForm>
+        <button type="submit" class="btn-trail" style="width: 100%; margin-top: 0.5rem;" disabled="@isLoading">
+            @(isLoading ? "Logging in..." : "Log in")
+        </button>
+    </EditForm>
 
-@if (!string.IsNullOrEmpty(errorMessage))
-{
-    <div class="alert alert-danger mt-3">@errorMessage</div>
-}
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <p class="auth-error">@errorMessage</p>
+    }
+
+    <p class="auth-switch">No account? <a href="/register">Register here</a></p>
+</div>
 
 @code {
     private LoginModel loginModel = new();
