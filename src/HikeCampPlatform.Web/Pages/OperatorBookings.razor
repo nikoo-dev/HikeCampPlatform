@@ -1,0 +1,117 @@
+@page "/operator/bookings"
+@inject HttpClient Http
+@inject HikeCampPlatform.Web.Services.AuthState AuthState
+@inject IJSRuntime JS
+
+<div class="breadcrumb">Operator portal</div>
+<h1>Bookings</h1>
+
+@if (!AuthState.IsLoggedIn || AuthState.Role != "Operator")
+{
+    <EmptyState Message="Please log in as an operator." />
+}
+else if (isLoading)
+{
+    <LoadingState Message="Loading bookings..." />
+}
+else if (bookings == null || bookings.Count == 0)
+{
+    <EmptyState Message="No bookings yet." />
+}
+else
+{
+    <table class="table" style="width: 100%;">
+        <thead>
+            <tr style="text-align: left; border-bottom: 1px solid rgba(139,115,85,0.3);">
+                <th style="padding: 0.5rem 0;">Tour</th>
+                <th>Hiker</th>
+                <th>Departure</th>
+                <th>Participants</th>
+                <th>Total</th>
+                <th>Status</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var b in bookings)
+            {
+                <tr style="border-bottom: 1px solid rgba(139,115,85,0.2);">
+                    <td style="padding: 0.6rem 0;">@b.TourTitle</td>
+                    <td>@b.UserFullName</td>
+                    <td class="font-mono">@b.DepartureDate.ToString("yyyy-MM-dd")</td>
+                    <td>@b.NumberOfParticipants</td>
+                    <td class="font-mono">@b.TotalPrice.ToString("0.00")</td>
+                    <td>@StatusLabel(b.Status)</td>
+                    <td>
+                        @if (b.Status == 1 && !b.IsCompleted)
+                        {
+                            <a href="#" @onclick="() => ConfirmCompletion(b.Id)" @onclick:preventDefault style="color: var(--trail-gold);">Confirm completion</a>
+                        }
+                        else if (b.IsCompleted)
+                        {
+                            <span style="color: var(--sage-light); font-size: 0.8rem;">Completed</span>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<OperatorBookingResponse>? bookings;
+    private bool isLoading = true;
+
+    public class OperatorBookingResponse
+    {
+        public int Id { get; set; }
+        public string UserFullName { get; set; } = string.Empty;
+        public string TourTitle { get; set; } = string.Empty;
+        public DateTime DepartureDate { get; set; }
+        public int NumberOfParticipants { get; set; }
+        public decimal TotalPrice { get; set; }
+        public int Status { get; set; }
+        public bool IsCompleted { get; set; }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadBookings();
+    }
+
+    private async Task LoadBookings()
+    {
+        try
+        {
+            bookings = await Http.GetFromJsonAsync<List<OperatorBookingResponse>>("/api/bookings/operator");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private string StatusLabel(int status) => status switch
+    {
+        0 => "Pending payment",
+        1 => "Confirmed",
+        2 => "Cancelled",
+        _ => "Unknown"
+    };
+
+    private async Task ConfirmCompletion(int bookingId)
+    {
+        var confirmed = await JS.InvokeAsync<bool>("confirm", "Mark this booking as completed? This will count toward the hiker's leaderboard rank.");
+        if (!confirmed) return;
+
+        var response = await Http.PatchAsync($"/api/bookings/{bookingId}/confirm-completion", null);
+        if (response.IsSuccessStatusCode)
+        {
+            await LoadBookings();
+        }
+        else
+        {
+            await JS.InvokeVoidAsync("alert", "Could not confirm completion: " + await response.Content.ReadAsStringAsync());
+        }
+    }
+}

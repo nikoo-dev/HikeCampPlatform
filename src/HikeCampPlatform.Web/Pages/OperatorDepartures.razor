@@ -1,0 +1,134 @@
+@page "/operator/tours/{TourId:int}/departures"
+@inject HttpClient Http
+@inject HikeCampPlatform.Web.Services.AuthState AuthState
+
+<div class="breadcrumb">Operator portal</div>
+<h1>Manage departures</h1>
+
+@if (!AuthState.IsLoggedIn || AuthState.Role != "Operator")
+{
+    <EmptyState Message="Please log in as an operator." />
+}
+else if (isLoading)
+{
+    <LoadingState Message="Loading departures..." />
+}
+else
+{
+    <div class="booking-card" style="max-width: 420px; margin-bottom: 2rem;">
+        <div class="section-label">Add a departure</div>
+        <label class="auth-label">Date</label>
+        <input type="date" class="auth-input" @bind="newDepartureDate" style="margin-bottom: 0.85rem;" />
+        <label class="auth-label">Max participants (optional override)</label>
+        <input type="number" class="auth-input" @bind="newMaxParticipants" style="margin-bottom: 0.85rem;" />
+        <button class="btn-trail" style="width: 100%;" @onclick="AddDeparture" disabled="@isSubmitting">
+            @(isSubmitting ? "Adding..." : "Add departure")
+        </button>
+        @if (!string.IsNullOrEmpty(errorMessage))
+        {
+            <p class="auth-error">@errorMessage</p>
+        }
+    </div>
+
+    @if (departures == null || departures.Count == 0)
+    {
+        <EmptyState Message="No departures yet for this tour." />
+    }
+    else
+    {
+        <table class="table" style="width: 100%; max-width: 600px;">
+            <thead>
+                <tr style="text-align: left; border-bottom: 1px solid rgba(139,115,85,0.3);">
+                    <th style="padding: 0.5rem 0;">Date</th>
+                    <th>Max</th>
+                    <th>Booked</th>
+                    <th>Spots left</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var d in departures)
+                {
+                    <tr style="border-bottom: 1px solid rgba(139,115,85,0.2);">
+                        <td class="font-mono" style="padding: 0.5rem 0;">@d.DepartureDate.ToString("yyyy-MM-dd")</td>
+                        <td>@d.MaxParticipants</td>
+                        <td>@d.CurrentParticipants</td>
+                        <td>@d.SpotsRemaining</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+}
+
+@code {
+    [Parameter]
+    public int TourId { get; set; }
+
+    private List<DepartureResponse>? departures;
+    private bool isLoading = true;
+    private bool isSubmitting = false;
+    private string? errorMessage;
+    private DateTime newDepartureDate = DateTime.UtcNow.AddMonths(1);
+    private int? newMaxParticipants;
+
+    public class DepartureResponse
+    {
+        public int Id { get; set; }
+        public DateTime DepartureDate { get; set; }
+        public int MaxParticipants { get; set; }
+        public int CurrentParticipants { get; set; }
+        public int SpotsRemaining { get; set; }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDepartures();
+    }
+
+    private async Task LoadDepartures()
+    {
+        try
+        {
+            departures = await Http.GetFromJsonAsync<List<DepartureResponse>>($"/api/tours/{TourId}/departures");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task AddDeparture()
+    {
+        isSubmitting = true;
+        errorMessage = null;
+
+        try
+        {
+            var body = new
+            {
+                DepartureDate = newDepartureDate,
+                MaxParticipants = newMaxParticipants
+            };
+
+            var response = await Http.PostAsJsonAsync($"/api/tours/{TourId}/departures", body);
+
+            if (response.IsSuccessStatusCode)
+            {
+                await LoadDepartures();
+                newMaxParticipants = null;
+            }
+            else
+            {
+                errorMessage = "Failed to add departure: " + await response.Content.ReadAsStringAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error: {ex.Message}";
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+}

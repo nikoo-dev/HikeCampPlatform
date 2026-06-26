@@ -1,0 +1,100 @@
+@page "/operator/dashboard"
+@inject HttpClient Http
+@inject HikeCampPlatform.Web.Services.AuthState AuthState
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
+<div class="breadcrumb">Operator portal</div>
+<h1>My tours</h1>
+
+@if (!AuthState.IsLoggedIn || AuthState.Role != "Operator")
+{
+    <EmptyState Message="Please log in as an operator to view this page." />
+}
+else
+{
+    <div style="margin-bottom: 1.5rem;">
+        <a href="/operator/tours/new" class="btn-trail">+ Create new tour</a>
+        <a href="/operator/bookings" class="trail-link" style="margin-left: 1.25rem;">View bookings &rarr;</a>
+    </div>
+
+    @if (isLoading)
+    {
+        <LoadingState Message="Loading your tours..." />
+    }
+    else if (tours == null || tours.Count == 0)
+    {
+        <EmptyState Message="You haven't created any tours yet." />
+    }
+    else
+    {
+        <div class="tour-grid">
+            @foreach (var tour in tours)
+            {
+                <div class="tour-card" style="cursor: default;">
+                    <div class="tour-card-type font-mono">
+                        @(tour.IsPublished ? "PUBLISHED" : "UNPUBLISHED")
+                    </div>
+                    <h3>@tour.Title</h3>
+                    <div class="tour-card-location font-mono">@tour.Country @(string.IsNullOrEmpty(tour.Region) ? "" : $"/ {tour.Region}")</div>
+                    <div class="tour-card-footer">
+                        <span class="tour-card-price">@tour.PricePerPerson.ToString("0") <span class="font-mono">@tour.Currency</span></span>
+                        <a href="/operator/tours/@tour.Id/departures" class="trail-link" style="font-size: 0.8rem;">Departures &rarr;</a>
+                    </div>
+                    <a href="#" @onclick="() => DeleteTour(tour.Id)" @onclick:preventDefault style="color: #D88; font-size: 0.78rem; display: block; margin-top: 0.6rem;">Delete tour</a>
+                </div>
+            }
+        </div>
+    }
+}
+
+@code {
+    private List<TourResponse>? tours;
+    private bool isLoading = true;
+
+    public class TourResponse
+    {
+        public int Id { get; set; }
+        public string Title { get; set; } = string.Empty;
+        public string Country { get; set; } = string.Empty;
+        public string? Region { get; set; }
+        public decimal PricePerPerson { get; set; }
+        public string Currency { get; set; } = string.Empty;
+        public bool IsPublished { get; set; }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!AuthState.IsLoggedIn || AuthState.Role != "Operator")
+        {
+            isLoading = false;
+            return;
+        }
+
+        try
+        {
+            tours = await Http.GetFromJsonAsync<List<TourResponse>>("/api/tours/mine");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task DeleteTour(int tourId)
+    {
+        var confirmed = await JS.InvokeAsync<bool>("confirm", "Delete this tour? This cannot be undone.");
+        if (!confirmed) return;
+
+        var response = await Http.DeleteAsync($"/api/tours/{tourId}");
+        if (response.IsSuccessStatusCode)
+        {
+            tours = tours?.Where(t => t.Id != tourId).ToList();
+        }
+        else
+        {
+            var body = await response.Content.ReadAsStringAsync();
+            await JS.InvokeVoidAsync("alert", string.IsNullOrEmpty(body) ? "Could not delete this tour." : body);
+        }
+    }
+}

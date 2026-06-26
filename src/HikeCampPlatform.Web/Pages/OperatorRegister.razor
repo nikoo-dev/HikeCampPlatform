@@ -1,0 +1,121 @@
+@page "/operator/register"
+@inject HttpClient Http
+@inject NavigationManager Navigation
+@inject HikeCampPlatform.Web.Services.AuthState AuthState
+@inject IJSRuntime JS
+
+<div class="auth-page">
+    <div class="breadcrumb">Operator portal</div>
+    <h1>Register as an operator</h1>
+
+    <EditForm Model="@registerModel" OnValidSubmit="HandleRegister" class="auth-form">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+        <label class="auth-label">Company name</label>
+        <InputText class="auth-input" @bind-Value="registerModel.CompanyName" />
+
+        <label class="auth-label">Email</label>
+        <InputText class="auth-input" @bind-Value="registerModel.Email" />
+
+        <label class="auth-label">Password</label>
+        <InputText type="password" class="auth-input" @bind-Value="registerModel.Password" />
+
+        <button type="submit" class="btn-trail" style="width: 100%; margin-top: 0.5rem;" disabled="@isLoading">
+            @(isLoading ? "Creating account..." : "Register")
+        </button>
+    </EditForm>
+
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <p class="auth-error">@errorMessage</p>
+    }
+
+    <p class="auth-switch">Already registered? <a href="/operator/login">Log in</a></p>
+</div>
+
+@code {
+    private RegisterModel registerModel = new();
+    private bool isLoading = false;
+    private string? errorMessage;
+
+    public class RegisterModel
+    {
+        [System.ComponentModel.DataAnnotations.Required]
+        public string CompanyName { get; set; } = string.Empty;
+
+        [System.ComponentModel.DataAnnotations.Required]
+        [System.ComponentModel.DataAnnotations.EmailAddress]
+        public string Email { get; set; } = string.Empty;
+
+        [System.ComponentModel.DataAnnotations.Required]
+        [System.ComponentModel.DataAnnotations.MinLength(8)]
+        public string Password { get; set; } = string.Empty;
+    }
+
+    public class OperatorAuthResponse
+    {
+        public string Token { get; set; } = string.Empty;
+        public int OperatorId { get; set; }
+        public string CompanyName { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public bool IsVerified { get; set; }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (AuthState.IsLoggedIn)
+        {
+            var confirmed = await JS.InvokeAsync<bool>("confirm",
+                $"You're currently logged in as {AuthState.FullName}. Continuing will log you out. Continue?");
+
+            if (confirmed)
+            {
+                await AuthState.LogoutAsync();
+                AuthState.ApplyAuthHeader(Http);
+            }
+            else
+            {
+                Navigation.NavigateTo("/");
+            }
+        }
+    }
+
+    private async Task HandleRegister()
+    {
+        isLoading = true;
+        errorMessage = null;
+
+        try
+        {
+            var response = await Http.PostAsJsonAsync("/api/operator-auth/register", registerModel);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<OperatorAuthResponse>();
+                if (result != null)
+                {
+                    await AuthState.SetUserAsync(result.Token, result.OperatorId, result.CompanyName, "Operator");
+                    AuthState.ApplyAuthHeader(Http);
+                    Navigation.NavigateTo("/operator/dashboard");
+                }
+            }
+            else if (response.StatusCode == System.Net.HttpStatusCode.Conflict)
+            {
+                errorMessage = "An account with this email already exists.";
+            }
+            else
+            {
+                errorMessage = "Registration failed. Please check your details.";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+}

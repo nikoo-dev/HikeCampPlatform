@@ -1,6 +1,7 @@
 ﻿@inject HikeCampPlatform.Web.Services.AuthState AuthState
 @inject IJSRuntime JS
 @inject HttpClient Http
+@inject NavigationManager Navigation
 @implements IDisposable
 
 <div class="trail-nav">
@@ -14,10 +15,23 @@
 
     <div class="trail-nav-spacer"></div>
 
+    @if (AuthState.IsLoggedIn && AuthState.Role == "Operator")
+    {
+        <a href="#" class="trail-link trail-link-muted" @onclick="HandleSwitchToUser" @onclick:preventDefault>For hikers</a>
+    }
+    else
+    {
+        <a href="#" class="trail-link trail-link-muted" @onclick="HandleSwitchToOperator" @onclick:preventDefault>For operators</a>
+    }
+
     @if (AuthState.IsLoggedIn)
     {
-        <span class="trail-nav-user font-mono">@AuthState.FullName</span>
-        <a href="#" class="trail-link" @onclick="HandleLogout" @onclick:preventDefault>Logout</a>
+        @if (AuthState.Role == "Operator")
+    {
+        <NavLink class="trail-link" href="operator/dashboard">Dashboard</NavLink>
+    }
+    <span class="trail-nav-user font-mono">@AuthState.FullName</span>
+    <a href="#" class="trail-link" @onclick="HandleLogout" @onclick:preventDefault>Logout</a>
     }
     else
     {
@@ -40,6 +54,31 @@
             await AuthState.LogoutAsync();
             AuthState.ApplyAuthHeader(Http);
         }
+    }
+
+    private async Task HandleSwitchToOperator()
+    {
+        await SwitchPortal("/operator/login");
+    }
+
+    private async Task HandleSwitchToUser()
+    {
+        await SwitchPortal("/login");
+    }
+
+    private async Task SwitchPortal(string destination)
+    {
+        if (AuthState.IsLoggedIn)
+        {
+            var confirmed = await JS.InvokeAsync<bool>("confirm",
+                $"You're currently logged in as {AuthState.FullName}. Continuing will log you out. Continue?");
+            if (!confirmed) return;
+
+            await AuthState.LogoutAsync();
+            AuthState.ApplyAuthHeader(Http);
+        }
+
+        Navigation.NavigateTo(destination);
     }
 
     public void Dispose()

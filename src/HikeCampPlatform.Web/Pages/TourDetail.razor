@@ -38,70 +38,98 @@ else
 
     <div id="map" class="trail-map" style="margin-bottom: 2rem;"></div>
 
-    <div style="display: grid; grid-template-columns: 1fr 300px; gap: 2.5rem;">
+    <div style="display: grid; grid-template-columns: 1fr 320px; gap: 2.5rem;">
         <div>
             <div class="section-label">About this trek</div>
             <p style="opacity: 0.9;">@tour.Description</p>
         </div>
 
         <div class="booking-card">
-            <div class="section-label">Departures</div>
 
-            @if (departures == null || departures.Count == 0)
+            @if (paymentStage == PaymentStage.SelectingDeparture)
             {
-                <p style="font-size: 0.85rem; color: var(--sage-light);">No upcoming departures.</p>
-            }
-            else
-            {
-                @foreach (var d in departures)
+                <div class="section-label">Departures</div>
+
+                @if (departures == null || departures.Count == 0)
                 {
-                    var isSelected = selectedDepartureId == d.Id;
-                    <div class="departure-option @(isSelected ? "departure-option-selected" : "")"
-                         @onclick="() => SelectDeparture(d.Id)">
-                        <div>
-                            <div class="font-mono departure-date">@d.DepartureDate.ToString("yyyy-MM-dd")</div>
-                            <div class="departure-spots">@d.SpotsRemaining spots left</div>
+                    <p style="font-size: 0.85rem; color: var(--sage-light);">No upcoming departures.</p>
+                }
+                else
+                {
+                    @foreach (var d in departures)
+                    {
+                        var isSelected = selectedDepartureId == d.Id;
+                        <div class="departure-option @(isSelected ? "departure-option-selected" : "")"
+                             @onclick="() => SelectDeparture(d.Id)">
+                            <div>
+                                <div class="font-mono departure-date">@d.DepartureDate.ToString("yyyy-MM-dd")</div>
+                                <div class="departure-spots">@d.SpotsRemaining spots left</div>
+                            </div>
+                            @if (isSelected)
+                            {
+                                <span class="departure-check">&#10003;</span>
+                            }
                         </div>
-                        @if (isSelected)
-                        {
-                            <span class="departure-check">&#10003;</span>
-                        }
+                    }
+                }
+
+                @if (!AuthState.IsLoggedIn)
+                {
+                    <p style="font-size: 0.85rem; margin-top: 1rem;"><a href="/login">Log in</a> to book.</p>
+                }
+
+                @if (selectedDepartureId.HasValue)
+                {
+                    <div class="booking-confirm">
+                        <label class="filter-label">Participants</label>
+                        <input type="number" min="1" @bind="numberOfParticipants" class="auth-input" style="margin-bottom: 0.85rem;" />
+
+                        <div class="booking-total">
+                            <span>Total</span>
+                            <span class="font-mono booking-total-value">@((tour!.PricePerPerson * numberOfParticipants).ToString("0.00")) @tour.Currency</span>
+                        </div>
+
+                        <button class="btn-trail" style="width: 100%; margin-top: 0.85rem;" @onclick="SubmitBooking" disabled="@isBooking">
+                            @(isBooking ? "Creating booking..." : "Continue to payment")
+                        </button>
                     </div>
                 }
-            }
 
-            @if (!AuthState.IsLoggedIn)
+                @if (!string.IsNullOrEmpty(errorMessage))
+                {
+                    <p style="margin-top: 1rem; color: #D88; font-size: 0.85rem;">@errorMessage</p>
+                }
+            }
+            else if (paymentStage == PaymentStage.AwaitingPayment)
             {
-                <p style="font-size: 0.85rem; margin-top: 1rem;"><a href="/login">Log in</a> to book.</p>
+                <div class="section-label">Payment</div>
+                <p style="font-size: 0.85rem; color: var(--sage-light); margin-bottom: 1rem;">
+                    Booking total: <span class="font-mono" style="color: var(--trail-gold);">@bookingResult!.TotalPrice.ToString("0.00") @tour.Currency</span>
+                </p>
+
+                <div id="payment-element" style="margin-bottom: 1rem;"></div>
+
+                <button class="btn-trail" style="width: 100%;" @onclick="HandleConfirmPayment" disabled="@isPaying">
+                    @(isPaying ? "Processing..." : "Pay now")
+                </button>
+
+                <p style="font-size: 0.72rem; color: var(--sage-light); margin-top: 0.75rem;">
+                    Test mode -- use card number 4242 4242 4242 4242, any future expiry, any CVC.
+                </p>
+
+                @if (!string.IsNullOrEmpty(errorMessage))
+                {
+                    <p style="margin-top: 1rem; color: #D88; font-size: 0.85rem;">@errorMessage</p>
+                }
             }
-
-            @if (selectedDepartureId.HasValue)
-            {
-                <div class="booking-confirm">
-                    <label class="filter-label">Participants</label>
-                    <input type="number" min="1" @bind="numberOfParticipants" class="auth-input" style="margin-bottom: 0.85rem;" />
-
-                    <div class="booking-total">
-                        <span>Total</span>
-                        <span class="font-mono booking-total-value">@((tour!.PricePerPerson * numberOfParticipants).ToString("0.00")) @tour.Currency</span>
-                    </div>
-
-                    <button class="btn-trail" style="width: 100%; margin-top: 0.85rem;" @onclick="SubmitBooking" disabled="@isBooking">
-                        @(isBooking ? "Booking..." : "Confirm booking")
-                    </button>
-                </div>
-            }
-
-            @if (bookingResult != null)
+            else if (paymentStage == PaymentStage.Paid)
             {
                 <div class="booking-success">
-                    Booked. Total @bookingResult.TotalPrice.ToString("0.00") @tour.Currency. Payment is pending.
+                    Payment successful. Your booking is confirmed -- enjoy the trail.
                 </div>
-            }
-
-            @if (!string.IsNullOrEmpty(errorMessage))
-            {
-                <p style="margin-top: 1rem; color: #D88; font-size: 0.85rem;">@errorMessage</p>
+                <button class="btn-trail" style="width: 100%; margin-top: 1rem;" @onclick="ResetBookingFlow">
+                    Book another departure
+                </button>
             }
         </div>
     </div>
@@ -111,15 +139,22 @@ else
     [Parameter]
     public int TourId { get; set; }
 
+    private enum PaymentStage { SelectingDeparture, AwaitingPayment, Paid }
+
     private TourResponse? tour;
     private List<DepartureResponse>? departures;
     private bool isLoading = true;
     private bool isBooking = false;
+    private bool isPaying = false;
     private int? selectedDepartureId;
     private int numberOfParticipants = 1;
     private BookingResponse? bookingResult;
     private string? errorMessage;
     private bool mapInitialized = false;
+    private bool stripeInitialized = false;
+    private PaymentStage paymentStage = PaymentStage.SelectingDeparture;
+
+    private const string StripePublishableKey = "pk_test_51TlSjy4EMt1abVL6vbUb41TY76h48jgkBtYDeIqFaMfppFEfnx8p4PmhevRACrnJ8LMPMJXq2W88Zy4TdoqiQcwD00rmDJLJBc";
 
     public class RoutePoint
     {
@@ -156,6 +191,7 @@ else
     {
         public int Id { get; set; }
         public decimal TotalPrice { get; set; }
+        public string ClientSecret { get; set; } = string.Empty;
     }
 
     private string DifficultyName(int level) => level switch
@@ -197,12 +233,21 @@ else
 
             await JS.InvokeVoidAsync("trailMap.render", "map", points);
         }
+
+        if (paymentStage == PaymentStage.AwaitingPayment && bookingResult != null)
+        {
+            if (!stripeInitialized)
+            {
+                stripeInitialized = true;
+                await JS.InvokeVoidAsync("stripeCheckout.init", StripePublishableKey);
+                await JS.InvokeVoidAsync("stripeCheckout.mountPaymentElement", bookingResult.ClientSecret, "payment-element");
+            }
+        }
     }
 
     private void SelectDeparture(int departureId)
     {
         selectedDepartureId = departureId;
-        bookingResult = null;
         errorMessage = null;
     }
 
@@ -221,7 +266,8 @@ else
             if (response.IsSuccessStatusCode)
             {
                 bookingResult = await response.Content.ReadFromJsonAsync<BookingResponse>();
-                selectedDepartureId = null;
+                paymentStage = PaymentStage.AwaitingPayment;
+                stripeInitialized = false;
             }
             else
             {
@@ -236,5 +282,53 @@ else
         {
             isBooking = false;
         }
+    }
+
+    private async Task HandleConfirmPayment()
+    {
+        isPaying = true;
+        errorMessage = null;
+
+        try
+        {
+            var result = await JS.InvokeAsync<PaymentResult>("stripeCheckout.confirmPayment", $"{GetBaseUrl()}/tours/{TourId}");
+
+            if (result.success)
+            {
+                paymentStage = PaymentStage.Paid;
+            }
+            else
+            {
+                errorMessage = result.message ?? "Payment failed.";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Payment error: {ex.Message}";
+        }
+        finally
+        {
+            isPaying = false;
+        }
+    }
+
+    private string GetBaseUrl()
+    {
+        return "http://localhost:5095";
+    }
+
+    private void ResetBookingFlow()
+    {
+        paymentStage = PaymentStage.SelectingDeparture;
+        selectedDepartureId = null;
+        bookingResult = null;
+        stripeInitialized = false;
+        numberOfParticipants = 1;
+    }
+
+    public class PaymentResult
+    {
+        public bool success { get; set; }
+        public string? message { get; set; }
     }
 }

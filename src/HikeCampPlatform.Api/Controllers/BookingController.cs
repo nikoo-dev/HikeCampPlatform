@@ -96,6 +96,49 @@ public class BookingController : ControllerBase
             ClientSecret = paymentIntent.ClientSecret
         });
     }
+    // GET /api/bookings/operator -- operator only, all bookings across their tours
+[HttpGet("operator")]
+[Authorize]
+public async Task<ActionResult<List<OperatorBookingResponse>>> GetOperatorBookings()
+{
+    var role = User.FindFirst(ClaimTypes.Role)?.Value;
+    if (role != "Operator")
+    {
+        return Forbid();
+    }
+
+    var operatorIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+    if (operatorIdClaim == null || !int.TryParse(operatorIdClaim, out var operatorId))
+    {
+        return Unauthorized();
+    }
+
+    var bookings = await _db.Bookings
+        .Include(b => b.User)
+        .Include(b => b.TourDeparture)
+            .ThenInclude(td => td!.Tour)
+        .Where(b => b.TourDeparture!.Tour!.OperatorId == operatorId)
+        .ToListAsync();
+
+    var hasCompletionIds = await _db.Completions
+        .Where(c => c.BookingId.HasValue)
+        .Select(c => c.BookingId!.Value)
+        .ToListAsync();
+
+    var response = bookings.Select(b => new OperatorBookingResponse
+    {
+        Id = b.Id,
+        UserFullName = b.User?.FullName ?? "",
+        TourTitle = b.TourDeparture?.Tour?.Title ?? "",
+        DepartureDate = b.TourDeparture?.DepartureDate ?? default,
+        NumberOfParticipants = b.NumberOfParticipants,
+        TotalPrice = b.TotalPrice,
+        Status = b.Status,
+        IsCompleted = hasCompletionIds.Contains(b.Id)
+    }).ToList();
+
+    return Ok(response);
+}
 
     // PATCH /api/bookings/{id}/confirm-completion -- operator only, must own the tour
     [HttpPatch("{id}/confirm-completion")]

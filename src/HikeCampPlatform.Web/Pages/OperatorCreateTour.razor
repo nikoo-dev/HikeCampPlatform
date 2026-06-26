@@ -1,0 +1,186 @@
+@page "/operator/tours/new"
+@inject HttpClient Http
+@inject NavigationManager Navigation
+@inject HikeCampPlatform.Web.Services.AuthState AuthState
+
+<div class="breadcrumb">Operator portal</div>
+<h1>Create a new tour</h1>
+
+@if (!AuthState.IsLoggedIn || AuthState.Role != "Operator")
+{
+    <EmptyState Message="Please log in as an operator to create a tour." />
+}
+else
+{
+    <EditForm Model="@form" OnValidSubmit="HandleSubmit" class="auth-form" style="max-width: 560px;">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+        <label class="auth-label">Title</label>
+        <InputText class="auth-input" @bind-Value="form.Title" />
+
+        <label class="auth-label">Description</label>
+        <InputTextArea class="auth-input" rows="4" @bind-Value="form.Description" />
+
+        <label class="auth-label">Type</label>
+        <select class="filter-select" style="width: 100%; margin-bottom: 1rem;" @bind="form.Type">
+            <option value="0">Hiking</option>
+            <option value="1">Camping</option>
+            <option value="2">Trekking</option>
+            <option value="3">Climbing</option>
+            <option value="4">Other</option>
+        </select>
+
+        <label class="auth-label">Country</label>
+        <InputText class="auth-input" @bind-Value="form.Country" />
+
+        <label class="auth-label">Region (optional)</label>
+        <InputText class="auth-input" @bind-Value="form.Region" />
+
+        <label class="auth-label">Difficulty</label>
+        <select class="filter-select" style="width: 100%; margin-bottom: 1rem;" @bind="form.DifficultyLevel">
+            <option value="0">Easy</option>
+            <option value="1">Moderate</option>
+            <option value="2">Hard</option>
+            <option value="3">Extreme</option>
+        </select>
+
+        <label class="auth-label">Duration (days)</label>
+        <InputNumber class="auth-input" @bind-Value="form.DurationDays" />
+
+        <label class="auth-label">Price per person</label>
+        <InputNumber class="auth-input" @bind-Value="form.PricePerPerson" />
+
+        <label class="auth-label">Currency</label>
+        <InputText class="auth-input" @bind-Value="form.Currency" />
+
+        <label class="auth-label">Max participants</label>
+        <InputNumber class="auth-input" @bind-Value="form.MaxParticipants" />
+
+        <div class="section-label" style="margin-top: 1.5rem;">Route points</div>
+        @for (int i = 0; i < form.RoutePoints.Count; i++)
+        {
+            var index = i;
+            <div style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem; align-items: center;">
+                <input type="number" step="0.0001" placeholder="Latitude" class="auth-input" style="flex: 1;"
+                       value="@form.RoutePoints[index].Latitude"
+                       @onchange="e => form.RoutePoints[index].Latitude = ParseDouble(e.Value)" />
+                <input type="number" step="0.0001" placeholder="Longitude" class="auth-input" style="flex: 1;"
+                       value="@form.RoutePoints[index].Longitude"
+                       @onchange="e => form.RoutePoints[index].Longitude = ParseDouble(e.Value)" />
+                <input type="text" placeholder="Label" class="auth-input" style="flex: 1;"
+                       value="@form.RoutePoints[index].Label"
+                       @onchange="e => form.RoutePoints[index].Label = e.Value?.ToString()" />
+                <a href="#" @onclick="() => RemoveRoutePoint(index)" @onclick:preventDefault style="color: #D88;">&times;</a>
+            </div>
+        }
+        <a href="#" @onclick="AddRoutePoint" @onclick:preventDefault class="trail-link" style="font-size: 0.85rem;">+ Add route point</a>
+
+        <button type="submit" class="btn-trail" style="width: 100%; margin-top: 1.5rem;" disabled="@isSubmitting">
+            @(isSubmitting ? "Creating..." : "Create tour")
+        </button>
+    </EditForm>
+
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <p class="auth-error">@errorMessage</p>
+    }
+
+    @if (!string.IsNullOrEmpty(successMessage))
+    {
+        <div class="booking-success" style="max-width: 560px;">@successMessage</div>
+    }
+}
+
+@code {
+    private TourForm form = new();
+    private bool isSubmitting = false;
+    private string? errorMessage;
+    private string? successMessage;
+
+    public class RoutePointForm
+    {
+        public double Latitude { get; set; }
+        public double Longitude { get; set; }
+        public int SequenceOrder { get; set; }
+        public string? Label { get; set; }
+    }
+
+    public class TourForm
+    {
+        [System.ComponentModel.DataAnnotations.Required]
+        public string Title { get; set; } = string.Empty;
+
+        [System.ComponentModel.DataAnnotations.Required]
+        public string Description { get; set; } = string.Empty;
+
+        public int Type { get; set; } = 0;
+
+        [System.ComponentModel.DataAnnotations.Required]
+        public string Country { get; set; } = string.Empty;
+
+        public string? Region { get; set; }
+
+        public int DifficultyLevel { get; set; } = 0;
+
+        public int DurationDays { get; set; } = 1;
+
+        public decimal PricePerPerson { get; set; } = 0;
+
+        public string Currency { get; set; } = "USD";
+
+        public int MaxParticipants { get; set; } = 10;
+
+        public List<RoutePointForm> RoutePoints { get; set; } = new();
+    }
+
+    private double ParseDouble(object? value)
+    {
+        return double.TryParse(value?.ToString(), out var result) ? result : 0;
+    }
+
+    private void AddRoutePoint()
+    {
+        form.RoutePoints.Add(new RoutePointForm { SequenceOrder = form.RoutePoints.Count });
+    }
+
+    private void RemoveRoutePoint(int index)
+    {
+        form.RoutePoints.RemoveAt(index);
+        for (int i = 0; i < form.RoutePoints.Count; i++)
+        {
+            form.RoutePoints[i].SequenceOrder = i;
+        }
+    }
+
+    private async Task HandleSubmit()
+    {
+        isSubmitting = true;
+        errorMessage = null;
+        successMessage = null;
+
+        try
+        {
+            var response = await Http.PostAsJsonAsync("/api/tours", form);
+
+            if (response.IsSuccessStatusCode)
+            {
+                successMessage = "Tour created. It will be visible publicly once published.";
+                await Task.Delay(1200);
+                Navigation.NavigateTo("/operator/dashboard");
+            }
+            else
+            {
+                errorMessage = "Failed to create tour: " + await response.Content.ReadAsStringAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error: {ex.Message}";
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+}

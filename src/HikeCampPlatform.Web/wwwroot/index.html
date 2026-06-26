@@ -12,6 +12,7 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <link rel="preload" id="webassembly" />
     <link rel="stylesheet" href="lib/bootstrap/dist/css/bootstrap.min.css" />
+    <script src="https://js.stripe.com/v3/"></script>
     <link rel="stylesheet" href="css/app.css" />
     <link rel="icon" type="image/png" href="favicon.png" />
     <link href="HikeCampPlatform.Web.styles.css" rel="stylesheet" />
@@ -69,6 +70,37 @@
             });
 
             map.fitBounds(latlngs, { padding: [30, 30] });
+        }
+    };
+</script>
+<script>
+    window.stripeCheckout = {
+        stripe: null,
+        elements: null,
+
+        init: function (publishableKey) {
+            this.stripe = Stripe(publishableKey);
+        },
+
+        mountPaymentElement: function (clientSecret, containerId) {
+            this.elements = this.stripe.elements({ clientSecret: clientSecret });
+            const paymentElement = this.elements.create('payment');
+            paymentElement.mount('#' + containerId);
+        },
+
+        confirmPayment: async function (returnUrl) {
+            const result = await this.stripe.confirmPayment({
+                elements: this.elements,
+                confirmParams: {
+                    return_url: returnUrl
+                },
+                redirect: 'if_required'
+            });
+
+            if (result.error) {
+                return { success: false, message: result.error.message };
+            }
+            return { success: true };
         }
     };
 </script>
